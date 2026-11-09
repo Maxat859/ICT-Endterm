@@ -7,6 +7,7 @@ import argparse
 import html
 import json
 import re
+import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -97,7 +98,25 @@ def parse_url(source, download_video=False, output_dir="downloads", max_comments
 
     video_path = None
     if download_video and guessed_video_path.is_file():
-        video_path = str(guessed_video_path.resolve())
+        final_path = guessed_video_path
+        if final_path.suffix.lower() != ".mp4":
+            mp4_path = final_path.with_suffix(".mp4")
+            try:
+                subprocess.run(
+                    [
+                        "ffmpeg", "-y", "-nostdin", "-loglevel", "error",
+                        "-i", str(final_path),
+                        "-c:v", "libx264", "-c:a", "aac",
+                        str(mp4_path),
+                    ],
+                    check=True,
+                )
+            except FileNotFoundError as error:
+                raise RuntimeError("FFmpeg не найден. Проверь: ffmpeg -version") from error
+            except subprocess.CalledProcessError as error:
+                raise RuntimeError("Не удалось преобразовать скачанное видео в MP4") from error
+            final_path = mp4_path
+        video_path = str(final_path.resolve())
 
     warnings = []
     if max_comments and not comments:
