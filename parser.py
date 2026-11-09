@@ -68,7 +68,7 @@ def parse_url(source, download_video=False, output_dir="downloads", max_comments
         "quiet": True, "no_warnings": True, "noplaylist": True,
         "skip_download": not download_video,
         "outtmpl": str(folder / "%(id)s.%(ext)s"),
-        "format": "best[ext=mp4]/best",
+        "format": "bv*+ba/bv*/ba",
         "getcomments": max_comments > 0,
     }
     if max_comments:
