@@ -7,3 +7,6 @@ av
 cv2
 easyocr
 faster_whisper
+streamlit
+plotly
+pandas
