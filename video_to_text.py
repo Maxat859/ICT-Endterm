@@ -24,7 +24,7 @@ def video_to_text(
     video_path: str,
     *,
     model_size: str = "base",
-    language: str | None = "ru",
+    language: str | None = None,
     num_frames: int = 5,
 ) -> str:
     """NLP."""
@@ -46,7 +46,7 @@ def video_to_text(
             str(path),
             language=language,
             beam_size=5,
-            vad_filter=True,
+            vad_filter=False,
             condition_on_previous_text=False,
         )
         speech = " ".join(
