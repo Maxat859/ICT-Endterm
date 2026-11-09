@@ -1,3 +1,9 @@
 re
 logging
 typing
+functools
+pathlib
+av
+cv2
+easyocr
+faster_whisper
