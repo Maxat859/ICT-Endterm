@@ -1,12 +1,7 @@
-re
-logging
-typing
-functools
-pathlib
-av
-cv2
-easyocr
-faster_whisper
 streamlit
 plotly
 pandas
+opencv-python
+av
+easyocr
+faster-whisper
