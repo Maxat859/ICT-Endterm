@@ -1,0 +1,12 @@
+1. Открой GitHub: https://github.com/Maxat859/ICT-Endterm/tree/feature/parser
+2. В меню веток создай новую ветку feature/social-parser-app ОТ feature/parser.
+3. В новой ветке: Add file -> Upload files.
+4. Загрузи из этого ZIP: parser.py, app.py, test_parser.py,
+   README_PARSER.md, requirements_parser.txt, .gitignore.
+5. Commit changes именно в feature/social-parser-app.
+6. На ноутбуке в папке проекта установи:
+   python -m pip install -U yt-dlp streamlit
+7. Запуск тестов: python -m unittest -v test_parser.py
+8. Запуск интерфейса: python -m streamlit run app.py
+9. Не объединяй изменения в main без проверки участника №6.
+10. Пока не загружай папку downloads, видеоролики или модели на GitHub.
