@@ -3,7 +3,8 @@
 Supports public YouTube videos/Shorts, TikTok posts and Instagram posts/Reels
 via yt-dlp. Does NOT bypass logins, privacy controls or rate limits.
 
-External requirement: python -m pip install yt-dlp
+Install: python -m pip install -U "yt-dlp[default]"
+For YouTube player challenges: install Node.js or Deno and put it on PATH.
 For download/conversion: ffmpeg must be on PATH.
 """
 
@@ -15,6 +16,7 @@ import json
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from urllib.request import urlopen
@@ -84,12 +86,32 @@ def _find_download(info: dict, folder: Path, guessed: Path) -> Path | None:
     return None
 
 
+def _is_html(path: Path) -> bool:
+    with path.open("rb") as media:
+        return media.read(512).lstrip().lower().startswith((b"<html", b"<!doctype", b"<head"))
+
+
 def _to_mp4(source: Path) -> Path:
     """Make video friendlier for OpenCV/Whisper. Do not delete the source."""
+    if _is_html(source):
+        raise RuntimeError("Сервер вернул HTML-страницу вместо видео")
     if source.suffix.lower() == ".mp4":
         with source.open("rb") as media:
-            if media.read(512).lstrip().lower().startswith((b"<html", b"<!doctype", b"<head")):
-                raise RuntimeError("Сервер вернул HTML-страницу вместо видео")
+            box_type = media.read(8)[4:8]
+        if box_type != b"ftyp":
+            raise RuntimeError("Сервер вернул некорректный MP4")
+        if shutil.which("ffmpeg"):
+            # A valid container header alone does not guarantee decodable video.
+            try:
+                check = subprocess.run(
+                    ["ffmpeg", "-nostdin", "-v", "error", "-xerror", "-i", str(source),
+                     "-map", "0:v:0", "-frames:v", "1", "-f", "framemd5", "-"],
+                    capture_output=True, check=True, timeout=45,
+                )
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+                raise RuntimeError("Не удалось декодировать кадр MP4") from error
+            if not re.search(rb"^0,\s*", check.stdout, re.MULTILINE):
+                raise RuntimeError("В MP4 нет доступного видеокадра")
         return source
     if shutil.which("ffmpeg") is None:
         raise RuntimeError("FFmpeg не найден: установи FFmpeg и проверь ffmpeg -version")
@@ -97,6 +119,7 @@ def _to_mp4(source: Path) -> Path:
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-nostdin", "-loglevel", "error", "-i", str(source),
+             "-map", "0:v:0", "-map", "0:a:0?", "-abort_on", "empty_output",
              "-c:v", "libx264", "-c:a", "aac", str(target)],
             check=True, timeout=300,
         )
@@ -151,21 +174,37 @@ def parse_url(
         }
 
     platform = detect_platform(source)
+    folder = Path(output_dir).expanduser()
+    if not download_video:
+        return _read_post(source, platform, False, folder, max_comments)
+
+    folder.mkdir(parents=True, exist_ok=True)
+    # Isolate fragments from previous failures and concurrent scans.
+    with tempfile.TemporaryDirectory(dir=folder) as staging:
+        result = _read_post(source, platform, True, Path(staging), max_comments)
+        if result["video_path"]:
+            ready = Path(result["video_path"])
+            destination = folder / ready.name
+            ready.replace(destination)
+            result["video_path"] = str(destination.resolve())
+        return result
+
+
+def _read_post(source: str, platform: str, download_video: bool, folder: Path,
+               max_comments: int) -> dict:
     try:
         from yt_dlp import YoutubeDL
         from yt_dlp.utils import DownloadError
     except ImportError as error:
         raise RuntimeError("Установи yt-dlp: python -m pip install -U yt-dlp") from error
 
-    folder = Path(output_dir).expanduser()
-    if download_video:
-        folder.mkdir(parents=True, exist_ok=True)
     options = {
         "quiet": True,
         "noprogress": True,
         "no_warnings": True,
         "noplaylist": True,
         "skip_download": not download_video,
+        "ignore_no_formats_error": not download_video,
         "outtmpl": str(folder / "%(id)s.%(ext)s"),
         "format": "b[ext=mp4]/b/bv*+ba" if shutil.which("ffmpeg") else "best",
         "playlistend": 1,
@@ -174,6 +213,8 @@ def parse_url(
         "retries": 2,
         "fragment_retries": 2,
     }
+    if platform == "youtube":
+        options["js_runtimes"] = {name: {} for name in ("deno", "node") if shutil.which(name)}
     if platform == "tiktok":
         # Same as yt-dlp --user-agent; TikTok may reject the default request.
         options["http_headers"] = {"User-Agent": TIKTOK_USER_AGENT}
@@ -196,10 +237,16 @@ def parse_url(
                 info = {**info, **entry}
             guessed = Path(ydl.prepare_filename(info)) if download_video else None
     except DownloadError as error:
-        if platform != "tiktok" and (download_video or max_comments):
+        if download_video or (platform == "youtube" and max_comments):
             # Retry metadata only so a blocked CDN/comment endpoint cannot erase the report.
-            result = parse_url(source, output_dir=output_dir)
-            result["warnings"].append(f"Получены только метаданные. Ошибка загрузки: {error}")
+            result = _read_post(source, platform, False, folder, 0)
+            if download_video and any(
+                path.is_file() and _is_html(path) for path in folder.iterdir()
+            ):
+                detail = "Сервер загрузки вернул HTML вместо видео"
+            else:
+                detail = str(error)
+            result["warnings"].append(f"Получены только метаданные. Ошибка загрузки: {detail}")
             return result
         if platform != "tiktok":
             raise RuntimeError(f"Платформа не предоставила данные: {error}") from error
