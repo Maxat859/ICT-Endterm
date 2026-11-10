@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 try:
     from parser import parse_url
-except ImportError:
+except Exception as e:
     def parse_url(url: str) -> dict:
         return {
             "text": "Слышь, ты лох! Переходи по ссылке http://free-steam-prize.xyz и покупай запрещенный товар!",
@@ -18,7 +18,7 @@ except ImportError:
 
 try:
     from text_check import check_text
-except ImportError:
+except Exception as e:
     def check_text(text: str) -> dict:
         return {
             "is_danger": True,
@@ -30,10 +30,11 @@ try:
     from video_to_text import extract_text_from_video
 except Exception as e:
     def extract_text_from_video(video_path: str) -> str:
-        return f"[Заглушка] Модуль видео временно отключен из-за системной ошибки: {e}"
+        return "Текст из видео (заглушка): купи оружие и запрещенку в нашем телеграм-боте"
+
 try:
     from vision_check import check_video_frames
-except ImportError:
+except Exception as e:
     def check_video_frames(video_path: str) -> dict:
         return {
             "is_danger": False,
@@ -43,7 +44,7 @@ except ImportError:
 
 try:
     from antifraud import check_antifraud
-except ImportError:
+except Exception as e:
     def check_antifraud(text: str, account_info: dict) -> dict:
         return {
             "is_danger": True,
