@@ -1,3 +1,4 @@
+#4 start
 import cv2
 from PIL import Image
 from google import genai
@@ -54,3 +55,4 @@ def check_video_safety(video_path):
         }
     except Exception as e:
         return {"status": "Қате", "details": str(e)}
+#4 end
