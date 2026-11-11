@@ -210,6 +210,8 @@ def _read_post(source: str, platform: str, download_video: bool, folder: Path,
         "playlistend": 1,
         "getcomments": max_comments > 0 and platform == "youtube",
         "socket_timeout": 25,
+        # Не загружать ролики с известным размером свыше 150 МБ.
+        "max_filesize": 150 * 1024 * 1024,
         "retries": 2,
         "fragment_retries": 2,
     }
