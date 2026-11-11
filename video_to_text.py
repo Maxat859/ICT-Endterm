@@ -27,7 +27,10 @@ def video_to_text(
     language: str | None = None,
     num_frames: int = 5,
 ) -> str:
-    """NLP."""
+    """Распознать речь (Whisper) и текст в нескольких кадрах (EasyOCR).
+
+    Если аудио или текста на кадрах нет, соответствующий раздел пропускается.
+    """
     path = Path(video_path).expanduser().resolve()
 
     if not path.is_file():
@@ -39,6 +42,10 @@ def video_to_text(
     # Check if there is a audio road.
     with av.open(str(path)) as container:
         has_audio = bool(container.streams.audio)
+        if container.duration is not None:
+            duration_seconds = container.duration / av.time_base
+            if duration_seconds > 600:
+                raise ValueError("Для анализа речи выберите видео не длиннее 10 минут")
 
     speech = ""
     if has_audio:
@@ -107,8 +114,18 @@ def video_to_text(
     return "\n\n".join(sections)
 
 
+# Поддержка старого имени функции.
+extract_text_from_video = video_to_text
+
+
 if __name__ == "__main__":
     import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("video", help="Путь к видеофайлу")
+    args = parser.parse_args()
+
+    print(video_to_text(args.video))
 
     parser = argparse.ArgumentParser()
     parser.add_argument("video", help="Путь к видеофайлу")
