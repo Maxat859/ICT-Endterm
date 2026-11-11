@@ -1,7 +1,13 @@
-streamlit
-plotly
-pandas
-opencv-python
-av
-easyocr
-faster-whisper
+# Python 3.10–3.12 recommended
+streamlit>=1.35
+pandas>=2.0
+plotly>=5.0
+yt-dlp>=2025.1.1
+transformers>=4.41,<5
+torch>=2.2
+av>=12
+opencv-python-headless>=4.8
+Pillow>=10
+easyocr>=1.7
+faster-whisper>=1.0
+google-genai>=1.0
