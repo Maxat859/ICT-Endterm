@@ -1,13 +1,3 @@
-"""Role 1 — public video metadata and local video preparation.
-
-Supports public YouTube videos/Shorts, TikTok posts and Instagram posts/Reels
-via yt-dlp. Does NOT bypass logins, privacy controls or rate limits.
-
-Install: python -m pip install -U "yt-dlp[default]"
-For YouTube player challenges: install Node.js or Deno and put it on PATH.
-For download/conversion: ffmpeg must be on PATH.
-"""
-
 from __future__ import annotations
 
 import argparse
