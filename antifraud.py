@@ -1,5 +1,3 @@
-"""Проверка ссылок и профиля по объяснимым правилам (не обученная ML-модель)."""
-
 from __future__ import annotations
 
 import re
@@ -13,7 +11,6 @@ LURE_WORDS = {"free", "prize", "bonus", "gift", "reward", "airdrop", "verify-acc
 
 
 def check_links(text: Any) -> dict:
-    """Даёт индекс подозрительности URL. Не утверждает, что ссылка точно фишинговая."""
     content = text if isinstance(text, str) else str(text or "")
     urls = []
     flagged = []
@@ -36,7 +33,6 @@ def check_links(text: Any) -> dict:
         if host in SHORTENERS:
             score += 25
             signals.append("Сокращённая ссылка скрывает настоящий адрес")
-        # Проверяем слова именно в адресе, не в произвольном тексте сообщения.
         tokens = set(re.split(r"[^a-z0-9]+", (host + parsed.path).lower()))
         if tokens & LURE_WORDS:
             score += 30
@@ -65,7 +61,6 @@ def check_links(text: Any) -> dict:
 
 
 def check_account_bot(profile: Any) -> dict:
-    """Не штрафуем пользователя за данные, которых у нас нет."""
     profile = profile if isinstance(profile, dict) else {}
     score = 0
     reasons = []
